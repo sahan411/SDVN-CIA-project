@@ -159,6 +159,12 @@ footer{background:#0e0e16;border-top:1px solid #1a1a28;padding:8px 24px;display:
         <span class="btn-tag">Tamper</span>
       </button>
 
+      <button class="btn btn-attack" id="btn-atk-beacon-replay" onclick="attackBeaconReplay()" disabled>
+        <span class="btn-icon">⚠</span>
+        <span class="btn-label">Attack: Beacon Replay</span>
+        <span class="btn-tag">Seq</span>
+      </button>
+
       <button class="btn btn-attack" id="btn-atk-metric" onclick="attackMetric()" disabled>
         <span class="btn-icon">⚠</span>
         <span class="btn-label">Attack: MS-DP</span>
@@ -379,10 +385,12 @@ async function doHandshake() {
   const d = await post('/api/handshake');
 
   if (d.ok) {
-    // Show steps
-    const html = d.steps.map((s, i) =>
-      step(i < 2 ? '◆' : '►', 'info', s)
-    ).join('');
+    // Show steps (indices 3,4 are whitelist + timestamp checks → green tick)
+    const html = d.steps.map((s, i) => {
+      if (i < 2)           return step('◆', 'info', s);
+      if (i === 3 || i === 4) return step('✓', 'ok', s);
+      return step('►', 'info', s);
+    }).join('');
     addLogEntry('info', html);
 
     // Session keys
@@ -456,8 +464,9 @@ async function sendBeacon() {
   if (d.ok) {
     const s = d.sent;
     addLogEntry('success',
-      `<div class="log-main green">✓ Beacon transmitted and verified</div>` +
+      `<div class="log-main green">✓ Beacon #${s.seq} transmitted and verified</div>` +
       `<div class="log-row">` +
+        kv('Seq', `#${s.seq}  (replay counter)`, 'green') +
         kv('Position', s.position, '') +
         kv('Speed', s.speed, '') +
         kv('Direction', s.direction, '') +
@@ -467,6 +476,7 @@ async function sendBeacon() {
     );
     beaconDone = true;
     enableBtn('btn-atk-beacon');
+    enableBtn('btn-atk-beacon-replay');
   } else {
     addLogEntry('error', `<div class="log-main red">✗ ${d.message}</div>`);
   }
@@ -514,6 +524,25 @@ async function attackBeacon() {
   addLogEntry('error',
     `<div class="log-main red">✗ Attack BLOCKED — falsified beacon rejected before routing</div>`
   );
+  updateStats(d.summary);
+}
+
+/* ── Attack: Beacon Replay ── */
+async function attackBeaconReplay() {
+  addSectionHeader('Attack — Beacon Replay (Sequence Detection)', '⚠');
+  const d = await post('/api/attack/beacon-replay');
+
+  addLogEntry('attack',
+    `<div class="log-main orange">⚠ ${d.attack}</div>` +
+    step('►', 'info', d.action) +
+    step('►', 'info', d.explanation) +
+    step('✗', 'fail', d.result)
+  );
+  if (d.blocked) {
+    addLogEntry('error',
+      `<div class="log-main red">✗ Attack BLOCKED — seq replay detected even though HMAC was valid</div>`
+    );
+  }
   updateStats(d.summary);
 }
 
@@ -591,7 +620,7 @@ async function doReset() {
   log.innerHTML = '<div class="empty-log" id="empty-msg">Click "Start Handshake" to begin the demonstration</div>';
   handshakeDone = beaconDone = metricDone = false;
 
-  ['btn-beacon','btn-metric','btn-atk-beacon','btn-atk-metric','btn-atk-mitm','btn-atk-flood'].forEach(disableBtn);
+  ['btn-beacon','btn-metric','btn-atk-beacon','btn-atk-beacon-replay','btn-atk-metric','btn-atk-mitm','btn-atk-flood'].forEach(disableBtn);
   enableBtn('btn-handshake');
 
   ['key-sess','key-enc','key-mac'].forEach(id => document.getElementById(id).textContent = '—');

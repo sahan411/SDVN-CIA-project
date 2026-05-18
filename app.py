@@ -20,6 +20,7 @@ Routes:
 """
 
 import copy
+import json
 import sys
 import os
 import time
@@ -124,6 +125,8 @@ def api_handshake():
                 'Vehicle V1  →  Kyber-512 keypair generated',
                 'Controller C1  →  Kyber-512 keypair generated',
                 'Round 1: Vehicle encapsulates K1 using pk_C  →  sends ct1',
+                'Whitelist check: V1 is in authorized vehicle list  →  identity confirmed',
+                'Timestamp validated: handshake is fresh (< 60 s)  →  no replay',
                 'Round 1: Controller decapsulates ct1  →  recovers K1',
                 'Round 2: Controller encapsulates K2 using pk_V  →  sends ct2',
                 'Round 2: Controller computes MAC_K1(ct2)  →  proves identity',
@@ -168,17 +171,19 @@ def api_beacon():
         )
         _state['last_beacon'] = msg
 
-        ok, result = rx.receive_beacon(msg)
-        summary    = rx.session_summary()
+        ok, result   = rx.receive_beacon(msg)
+        summary      = rx.session_summary()
+        beacon_data  = json.loads(bytes.fromhex(msg['payload']))
 
         return jsonify({
             'ok'   : ok,
             'sent' : {
+                'seq'       : beacon_data.get('seq', 0),
                 'position'  : '[6.9271, 79.8612]  (Colombo, LK)',
                 'speed'     : '13.9 m/s  (50 km/h)',
                 'direction' : '270.0°  (westbound)',
                 'hmac_tag'  : msg['hmac'][:24] + '...',
-                'mechanism' : 'HMAC-SHA256(mac_key, payload)',
+                'mechanism' : 'HMAC-SHA256(mac_key, payload) + seq replay check',
             },
             'result'  : result if ok else str(result),
             'summary' : summary,
@@ -272,6 +277,34 @@ def api_attack_metric():
             'result'  : str(result),
             'summary' : summary,
             'blocked' : True,
+        })
+
+    except Exception as e:
+        return jsonify({'ok': False, 'message': str(e)})
+
+
+@app.route('/api/attack/beacon-replay', methods=['POST'])
+def api_attack_beacon_replay():
+    """Beacon replay: resends a valid captured beacon — seq check catches it."""
+    if not _state.get('last_beacon'):
+        return jsonify({'ok': False,
+                        'message': 'Send a beacon first, then try the attack.'})
+    try:
+        rx          = _state['rx']
+        beacon_data = json.loads(bytes.fromhex(_state['last_beacon']['payload']))
+        seq         = beacon_data.get('seq', 0)
+
+        ok, result = rx.receive_beacon(_state['last_beacon'])
+        summary    = rx.session_summary()
+
+        return jsonify({
+            'ok'         : ok,
+            'attack'     : 'Beacon Replay — Sequence Number Detection',
+            'action'     : f'Replaying valid beacon (seq #{seq}) — HMAC is intact, beacon is genuine',
+            'explanation': f'Controller already accepted seq #{seq}. Monotonic counter detects the replay.',
+            'result'     : str(result),
+            'summary'    : summary,
+            'blocked'    : not ok,
         })
 
     except Exception as e:

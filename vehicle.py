@@ -42,6 +42,7 @@ class Beacon:
     speed      : float       # m/s
     direction  : float       # degrees (0–360)
     timestamp  : int         # Unix epoch
+    seq        : int         # monotonically increasing — replay detection
 
     def serialize(self) -> bytes:
         return json.dumps(asdict(self), separators=(',', ':')).encode()
@@ -85,6 +86,7 @@ class VehicleOBU:
         # Hash chain seed = SHA256(vehicle_id) — same on both sides
         self._chain_hash: bytes = hashlib.sha256(vehicle_id.encode()).digest()
         self._metric_count: int = 0
+        self._beacon_seq: int   = 0
 
     # ── Beacon ────────────────────────────────────────────────
     def send_beacon(self, position: list, speed: float,
@@ -96,12 +98,14 @@ class VehicleOBU:
         Security: any bit-flip in payload invalidates HMAC at controller.
         Insider attacker who modifies GPS post-authentication is detected.
         """
+        self._beacon_seq += 1
         beacon  = Beacon(
             vehicle_id=self.vehicle_id,
             position=position,
             speed=speed,
             direction=direction,
             timestamp=int(time.time()),
+            seq=self._beacon_seq,
         )
         payload = beacon.serialize()
         tag     = hmac_sign(self.mac_key, payload)

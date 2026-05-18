@@ -38,6 +38,9 @@ from crypto_utils import (
     b64e, b64d,
 )
 
+# Authorized vehicle identities — any unknown ID is rejected at handshake
+ALLOWED_VEHICLES = {'V1', 'V2', 'V3'}
+
 
 # ─────────────────────────────────────────────────────────────
 # Vehicle Side
@@ -146,6 +149,18 @@ class ControllerProtocol:
         pk_vehicle = b64d(request["pk_vehicle"])
         ct1        = b64d(request["ct1"])
         timestamp  = request["timestamp"]
+
+        # Reject unknown vehicle identities
+        if vehicle_id not in ALLOWED_VEHICLES:
+            raise ValueError(
+                f"[HANDSHAKE FAIL] Vehicle '{vehicle_id}' is not in the authorized whitelist."
+            )
+
+        # Reject stale or replayed handshake messages (60-second freshness window)
+        if abs(int(time.time()) - timestamp) > 60:
+            raise ValueError(
+                "[HANDSHAKE FAIL] Handshake timestamp expired — possible replay attack."
+            )
 
         # Decapsulate ct1 → recover K1   (proves vehicle had controller's pk)
         K1 = self.kem.decap(ct1)

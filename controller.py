@@ -43,6 +43,7 @@ class SDNController:
         # Hash chain seed mirrors vehicle side
         self._expected_chain: bytes = hashlib.sha256(vehicle_id.encode()).digest()
         self._last_seq: int         = 0
+        self._last_beacon_seq: int  = -1
 
         # Running stats for viva demonstration
         self.accepted_beacons  = 0
@@ -73,8 +74,19 @@ class SDNController:
                 "    Possible cause: position falsification (LAF-DP) or tampering."
             )
 
+        # Step 2: Sequence replay check — reject duplicate or out-of-order beacons
+        parsed = json.loads(payload)
+        seq    = parsed.get('seq', 0)
+        if seq <= self._last_beacon_seq:
+            self.rejected_beacons += 1
+            return False, (
+                f"SEQUENCE REPLAY — beacon seq #{seq} rejected "
+                f"(last accepted: #{self._last_beacon_seq})."
+            )
+
+        self._last_beacon_seq = seq
         self.accepted_beacons += 1
-        return True, json.loads(payload)
+        return True, parsed
 
     # ── Metric Handler ────────────────────────────────────────
     def receive_metric(self, message: dict) -> tuple[bool, dict | str]:
@@ -133,4 +145,5 @@ class SDNController:
             "rejected_beacons" : self.rejected_beacons,
             "accepted_metrics" : self.accepted_metrics,
             "rejected_metrics" : self.rejected_metrics,
+            "last_beacon_seq"  : self._last_beacon_seq,
         }
