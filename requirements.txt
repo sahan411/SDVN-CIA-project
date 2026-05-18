@@ -1,0 +1,8 @@
+# SIGMA-V — Information Security Course Project
+# Post-Quantum Secure V2C Communication | Group G5
+#
+# Install all dependencies:
+#   pip install -r requirements.txt
+
+kyber-py>=0.7.0        # Pure-Python Kyber-512 (NIST ML-KEM / FIPS 203)
+cryptography>=42.0.0   # AES-256-GCM, HKDF-SHA256

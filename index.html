@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGMA-V — Live Demo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0b0b0f;color:#dde1ea;font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── Header ── */
+header{background:#111118;border-bottom:1px solid #1e1e2e;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
+.header-title{display:flex;flex-direction:column;gap:2px;}
+.header-title h1{font-size:16px;font-weight:600;color:#e8eaf0;letter-spacing:.3px;}
+.header-title span{font-size:11px;color:#6b7280;}
+.header-badge{background:#1a1a2a;border:1px solid #2a2a40;border-radius:6px;padding:5px 12px;font-size:11px;color:#8b8fa8;}
+.header-badge b{color:#a78bfa;}
+
+/* ── Layout ── */
+.layout{display:grid;grid-template-columns:280px 1fr 280px;gap:0;flex:1;min-height:0;}
+
+/* ── Panels ── */
+.panel{background:#111118;border-right:1px solid #1a1a28;display:flex;flex-direction:column;overflow:hidden;}
+.panel.controller-panel{border-right:none;border-left:1px solid #1a1a28;}
+.panel-header{padding:14px 16px 10px;border-bottom:1px solid #1a1a28;}
+.panel-header h2{font-size:13px;font-weight:600;letter-spacing:.4px;}
+.panel-header .sub{font-size:11px;color:#555869;margin-top:2px;}
+.vehicle-panel .panel-header h2{color:#2dd4a0;}
+.controller-panel .panel-header h2{color:#a78bfa;}
+
+/* ── Buttons ── */
+.btn-group{padding:14px 12px;display:flex;flex-direction:column;gap:8px;}
+.btn{border:none;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:500;cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:8px;width:100%;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.btn-primary{background:#1d3a5c;color:#93c5fd;border:1px solid #1e4a7a;}
+.btn-primary:hover:not(:disabled){background:#1e4a7a;color:#bfdbfe;}
+.btn-teal{background:#0d3327;color:#34d399;border:1px solid #0f4a36;}
+.btn-teal:hover:not(:disabled){background:#0f4a36;color:#6ee7b7;}
+.btn-attack{background:#2d1a0e;color:#fb923c;border:1px solid #431f08;}
+.btn-attack:hover:not(:disabled){background:#3d2510;color:#fdba74;}
+.btn-reset{background:#1a1a22;color:#6b7280;border:1px solid #242430;}
+.btn-reset:hover{background:#222230;color:#9ca3af;}
+.btn-divider{height:1px;background:#1a1a28;margin:4px 0;}
+.btn-icon{font-size:14px;width:16px;text-align:center;}
+.btn-label{flex:1;}
+.btn-tag{font-size:10px;background:rgba(255,255,255,.06);border-radius:4px;padding:1px 5px;margin-left:auto;}
+
+/* ── Session Info ── */
+.session-info{padding:12px;border-top:1px solid #1a1a28;flex:1;}
+.session-info h3{font-size:11px;color:#555869;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;}
+.info-row{display:flex;flex-direction:column;gap:2px;margin-bottom:8px;}
+.info-label{font-size:10px;color:#555869;}
+.info-value{font-size:11px;color:#e2e8f0;font-family:'Courier New',monospace;word-break:break-all;line-height:1.4;}
+.info-value.green{color:#34d399;}
+.info-value.purple{color:#a78bfa;}
+.badge-pqc{display:inline-block;background:#1a0d3a;border:1px solid #3a1a7a;border-radius:5px;padding:3px 8px;font-size:10px;color:#a78bfa;margin-top:4px;}
+
+/* ── Stats ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px;border-top:1px solid #1a1a28;}
+.stat-box{background:#0f0f16;border:1px solid #1a1a28;border-radius:8px;padding:10px;text-align:center;}
+.stat-num{font-size:22px;font-weight:600;line-height:1;}
+.stat-num.green{color:#34d399;}
+.stat-num.red{color:#f87171;}
+.stat-num.orange{color:#fb923c;}
+.stat-label{font-size:10px;color:#555869;margin-top:3px;}
+
+/* ── Log Panel ── */
+.log-panel{display:flex;flex-direction:column;background:#0d0d13;}
+.log-header{padding:14px 16px 10px;border-bottom:1px solid #1a1a28;display:flex;align-items:center;justify-content:space-between;}
+.log-header h2{font-size:13px;font-weight:600;color:#dde1ea;}
+.log-clear{background:none;border:1px solid #1e1e2e;border-radius:5px;padding:3px 10px;font-size:11px;color:#555869;cursor:pointer;}
+.log-clear:hover{color:#9ca3af;border-color:#2a2a3a;}
+.log-body{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:4px;}
+.log-body::-webkit-scrollbar{width:4px;}
+.log-body::-webkit-scrollbar-track{background:#0d0d13;}
+.log-body::-webkit-scrollbar-thumb{background:#222230;border-radius:2px;}
+
+/* ── Log Entries ── */
+.log-entry{border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.5;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.log-entry.section{background:#141420;border:1px solid #1e1e2e;color:#8b8fa8;}
+.log-entry.section .section-title{font-weight:600;color:#c4c8d8;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.log-entry.success{background:#0a2a1a;border:1px solid #0f4a2a;}
+.log-entry.error{background:#2a0a0a;border:1px solid #4a0f0f;}
+.log-entry.info{background:#0a1a2a;border:1px solid #0f2a4a;}
+.log-entry.attack{background:#2a1400;border:1px solid #4a2800;}
+.log-step{display:flex;align-items:flex-start;gap:6px;font-size:11px;color:#94a3b8;padding:1px 0;}
+.log-step .icon{font-size:11px;margin-top:1px;flex-shrink:0;}
+.log-step .icon.ok{color:#34d399;}
+.log-step .icon.fail{color:#f87171;}
+.log-step .icon.info{color:#60a5fa;}
+.log-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:3px;}
+.log-kv{font-size:10px;}
+.log-kv .k{color:#555869;}
+.log-kv .v{color:#e2e8f0;font-family:'Courier New',monospace;}
+.log-kv .v.green{color:#34d399;}
+.log-kv .v.red{color:#f87171;}
+.log-kv .v.purple{color:#a78bfa;}
+.log-main{font-weight:500;}
+.log-main.green{color:#34d399;}
+.log-main.red{color:#f87171;}
+.log-main.orange{color:#fb923c;}
+.empty-log{color:#2a2a3a;font-size:12px;text-align:center;padding:40px 0;}
+
+/* ── Status Bar ── */
+footer{background:#0e0e16;border-top:1px solid #1a1a28;padding:8px 24px;display:flex;align-items:center;gap:20px;font-size:11px;color:#555869;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#1e1e2e;flex-shrink:0;}
+.status-dot.active{background:#34d399;box-shadow:0 0 6px #34d39966;}
+.status-item{display:flex;align-items:center;gap:6px;}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="header-title">
+    <h1>SIGMA-V — Post-Quantum Secure V2C Communication</h1>
+    <span>Information Security Course Project &nbsp;·&nbsp; Group G5 &nbsp;·&nbsp; University of Ruhuna, EIE</span>
+  </div>
+  <div class="header-badge">Algorithm: <b>Kyber-512</b> &nbsp;|&nbsp; <b>AES-256-GCM</b> &nbsp;|&nbsp; <b>HMAC-SHA256</b></div>
+</header>
+
+<!-- ── Main Layout ── -->
+<div class="layout">
+
+  <!-- ── Vehicle Panel ── -->
+  <div class="panel vehicle-panel">
+    <div class="panel-header">
+      <h2>Vehicle OBU &nbsp;(V1)</h2>
+      <div class="sub">On-Board Unit — Message Sender</div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn-primary" id="btn-handshake" onclick="doHandshake()">
+        <span class="btn-icon">🔑</span>
+        <span class="btn-label">Start Handshake</span>
+        <span class="btn-tag">Kyber-512</span>
+      </button>
+
+      <div class="btn-divider"></div>
+
+      <button class="btn btn-teal" id="btn-beacon" onclick="sendBeacon()" disabled>
+        <span class="btn-icon">📡</span>
+        <span class="btn-label">Send Beacon</span>
+        <span class="btn-tag">HMAC</span>
+      </button>
+
+      <button class="btn btn-teal" id="btn-metric" onclick="sendMetric()" disabled>
+        <span class="btn-icon">📊</span>
+        <span class="btn-label">Send Metric</span>
+        <span class="btn-tag">AES-GCM</span>
+      </button>
+
+      <div class="btn-divider"></div>
+
+      <button class="btn btn-attack" id="btn-atk-beacon" onclick="attackBeacon()" disabled>
+        <span class="btn-icon">⚠</span>
+        <span class="btn-label">Attack: LAF-DP</span>
+        <span class="btn-tag">Tamper</span>
+      </button>
+
+      <button class="btn btn-attack" id="btn-atk-metric" onclick="attackMetric()" disabled>
+        <span class="btn-icon">⚠</span>
+        <span class="btn-label">Attack: MS-DP</span>
+        <span class="btn-tag">Replay</span>
+      </button>
+
+      <button class="btn btn-attack" id="btn-atk-mitm" onclick="attackMitm()" disabled>
+        <span class="btn-icon">⚠</span>
+        <span class="btn-label">Attack: MITM</span>
+        <span class="btn-tag">Handshake</span>
+      </button>
+
+      <button class="btn btn-attack" id="btn-atk-flood" onclick="attackFlood()" disabled>
+        <span class="btn-icon">⚠</span>
+        <span class="btn-label">Attack: DoS Flood</span>
+        <span class="btn-tag">Avail.</span>
+      </button>
+
+      <div class="btn-divider"></div>
+
+      <button class="btn btn-reset" onclick="doReset()">
+        <span class="btn-icon">↺</span>
+        <span class="btn-label">Reset Demo</span>
+      </button>
+    </div>
+
+    <div class="session-info">
+      <h3>Session Keys</h3>
+      <div class="info-row">
+        <div class="info-label">K_sess (HKDF output)</div>
+        <div class="info-value" id="key-sess">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">enc_key (AES-256)</div>
+        <div class="info-value green" id="key-enc">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">mac_key (HMAC-SHA256)</div>
+        <div class="info-value purple" id="key-mac">—</div>
+      </div>
+      <div class="info-row" style="margin-top:8px">
+        <div class="info-label">Post-quantum security</div>
+        <div><span class="badge-pqc" id="pqc-badge">⬤ Not established</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Log Panel ── -->
+  <div class="log-panel">
+    <div class="log-header">
+      <h2>Communication Log</h2>
+      <button class="log-clear" onclick="clearLog()">Clear</button>
+    </div>
+    <div class="log-body" id="log">
+      <div class="empty-log" id="empty-msg">
+        Click "Start Handshake" to begin the demonstration
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Controller Panel ── -->
+  <div class="panel controller-panel">
+    <div class="panel-header">
+      <h2>SDN Controller &nbsp;(C1)</h2>
+      <div class="sub">Software-Defined Controller — Verifier</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-num green" id="stat-ba">0</div>
+        <div class="stat-label">Beacons accepted</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num red" id="stat-br">0</div>
+        <div class="stat-label">Beacons rejected</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num green" id="stat-ma">0</div>
+        <div class="stat-label">Metrics accepted</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num red" id="stat-mr">0</div>
+        <div class="stat-label">Metrics rejected</div>
+      </div>
+      <div class="stat-box" style="grid-column:span 2;">
+        <div class="stat-num orange" id="stat-flood">0</div>
+        <div class="stat-label">Flood blocked (DoS)</div>
+      </div>
+    </div>
+
+    <div class="session-info">
+      <h3>Security Properties</h3>
+      <div class="info-row">
+        <div class="info-label">Confidentiality</div>
+        <div class="info-value" id="prop-conf">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Integrity</div>
+        <div class="info-value" id="prop-intg">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Authentication</div>
+        <div class="info-value" id="prop-auth">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Non-Repudiation</div>
+        <div class="info-value" id="prop-nrep">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Post-Quantum</div>
+        <div class="info-value" id="prop-pqc">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Forward Secrecy</div>
+        <div class="info-value" id="prop-fwdsec">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Availability</div>
+        <div class="info-value" id="prop-avail">—</div>
+      </div>
+
+      <h3 style="margin-top:14px">Key Sizes (Kyber-512)</h3>
+      <div class="info-row">
+        <div class="info-label">Public key (pk_V / pk_C)</div>
+        <div class="info-value" id="ks-pk">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Ciphertext (ct1 / ct2)</div>
+        <div class="info-value" id="ks-ct">—</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="status-item">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">Not connected</span>
+  </div>
+  <span>·</span>
+  <span>Kyber-512 &nbsp;|&nbsp; NIST FIPS 203 (ML-KEM)</span>
+  <span>·</span>
+  <span>AES-256-GCM &nbsp;|&nbsp; HMAC-SHA256 &nbsp;|&nbsp; HKDF-SHA256</span>
+</footer>
+
+<script>
+const log     = document.getElementById('log');
+const emptyMsg= document.getElementById('empty-msg');
+let handshakeDone = false;
+let beaconDone    = false;
+let metricDone    = false;
+
+/* ── Helpers ── */
+function setStatus(active, text) {
+  document.getElementById('status-dot').className = 'status-dot' + (active ? ' active' : '');
+  document.getElementById('status-text').textContent = text;
+}
+
+function removeEmpty() {
+  if (emptyMsg) emptyMsg.remove();
+}
+
+function scrollLog() {
+  log.scrollTop = log.scrollHeight;
+}
+
+function addSectionHeader(title, icon) {
+  removeEmpty();
+  const e = document.createElement('div');
+  e.className = 'log-entry section';
+  e.innerHTML = `<div class="section-title">${icon} &nbsp;${title}</div>`;
+  log.appendChild(e);
+  scrollLog();
+  return e;
+}
+
+function addLogEntry(cls, html) {
+  removeEmpty();
+  const e = document.createElement('div');
+  e.className = `log-entry ${cls}`;
+  e.innerHTML = html;
+  log.appendChild(e);
+  scrollLog();
+}
+
+function step(icon, cls, text) {
+  return `<div class="log-step"><span class="icon ${cls}">${icon}</span><span>${text}</span></div>`;
+}
+
+function kv(k, v, vcls='') {
+  return `<div class="log-kv"><span class="k">${k}: </span><span class="v ${vcls}">${v}</span></div>`;
+}
+
+function updateStats(s) {
+  if (!s) return;
+  document.getElementById('stat-ba').textContent = s.accepted_beacons;
+  document.getElementById('stat-br').textContent = s.rejected_beacons;
+  document.getElementById('stat-ma').textContent = s.accepted_metrics;
+  document.getElementById('stat-mr').textContent = s.rejected_metrics;
+}
+
+function enableBtn(id) { document.getElementById(id).disabled = false; }
+function disableBtn(id){ document.getElementById(id).disabled = true;  }
+
+async function post(url) {
+  const r = await fetch(url, { method: 'POST' });
+  return r.json();
+}
+
+/* ── Handshake ── */
+async function doHandshake() {
+  disableBtn('btn-handshake');
+  addSectionHeader('Phase 1 & 2 — Kyber-512 Key Agreement', '🔑');
+  setStatus(false, 'Generating keypairs…');
+
+  const d = await post('/api/handshake');
+
+  if (d.ok) {
+    // Show steps
+    const html = d.steps.map((s, i) =>
+      step(i < 2 ? '◆' : '►', 'info', s)
+    ).join('');
+    addLogEntry('info', html);
+
+    // Session keys
+    addLogEntry('success',
+      `<div class="log-main green">✓ Mutual authentication complete — session established</div>` +
+      `<div class="log-row">` +
+        kv('Algorithm', d.algorithm, 'purple') +
+        kv('K_sess', d.session_key, '') +
+        kv('enc_key', d.enc_key, 'green') +
+        kv('mac_key', d.mac_key, 'purple') +
+      `</div>`
+    );
+
+    // Timing display
+    if (d.timing) {
+      addLogEntry('info',
+        `<div class="log-main" style="color:#8b8fa8;font-size:11px;">⏱ Performance Timing (pure-Python Kyber-512)</div>` +
+        `<div class="log-row">` +
+          kv('Keypair generation', d.timing.keygen_ms + ' ms', '') +
+          kv('Round 1 (encap)', d.timing.r1_encap_ms + ' ms', '') +
+          kv('Round 2 (respond)', d.timing.r2_respond_ms + ' ms', '') +
+          kv('Round 2 (complete)', d.timing.r2_complete_ms + ' ms', '') +
+          kv('Total handshake', d.timing.total_ms + ' ms', 'green') +
+        `</div>`
+      );
+    }
+
+    // Update side panels
+    document.getElementById('key-sess').textContent = d.session_key;
+    document.getElementById('key-enc').textContent  = d.enc_key;
+    document.getElementById('key-mac').textContent  = d.mac_key;
+    document.getElementById('pqc-badge').textContent = '✓ Kyber-512 — NIST FIPS 203';
+    document.getElementById('pqc-badge').style.color = '#34d399';
+    document.getElementById('pqc-badge').style.borderColor = '#0f4a36';
+
+    document.getElementById('prop-conf').textContent = '✓ AES-256-GCM';
+    document.getElementById('prop-conf').style.color = '#34d399';
+    document.getElementById('prop-intg').textContent = '✓ HMAC-SHA256 + SHA-256 chain';
+    document.getElementById('prop-intg').style.color = '#34d399';
+    document.getElementById('prop-auth').textContent = '✓ Mutual Kyber-512 KEM';
+    document.getElementById('prop-auth').style.color = '#34d399';
+    document.getElementById('prop-nrep').textContent = '✓ MAC_K1(ct2) session binding';
+    document.getElementById('prop-nrep').style.color = '#34d399';
+    document.getElementById('prop-pqc').textContent  = '✓ Kyber-512 (ML-KEM)';
+    document.getElementById('prop-pqc').style.color  = '#a78bfa';
+    document.getElementById('prop-fwdsec').textContent = '✓ Ephemeral K1, K2 per session';
+    document.getElementById('prop-fwdsec').style.color = '#34d399';
+    document.getElementById('prop-avail').textContent  = '✓ Rate limiting active';
+    document.getElementById('prop-avail').style.color  = '#34d399';
+    document.getElementById('ks-pk').textContent = d.pk_v_size;
+    document.getElementById('ks-ct').textContent = d.ct1_size;
+
+    handshakeDone = true;
+    enableBtn('btn-beacon');
+    enableBtn('btn-metric');
+    enableBtn('btn-atk-mitm');
+    enableBtn('btn-atk-flood');
+    setStatus(true, 'Session established — Kyber-512');
+  } else {
+    addLogEntry('error', `<div class="log-main red">✗ Handshake failed: ${d.message}</div>`);
+    enableBtn('btn-handshake');
+    setStatus(false, 'Error');
+  }
+}
+
+/* ── Beacon ── */
+async function sendBeacon() {
+  addSectionHeader('Phase 3 — HMAC-SHA256 Beacon', '📡');
+  const d = await post('/api/beacon');
+
+  if (d.ok) {
+    const s = d.sent;
+    addLogEntry('success',
+      `<div class="log-main green">✓ Beacon transmitted and verified</div>` +
+      `<div class="log-row">` +
+        kv('Position', s.position, '') +
+        kv('Speed', s.speed, '') +
+        kv('Direction', s.direction, '') +
+        kv('HMAC tag', s.hmac_tag, 'green') +
+        kv('Mechanism', s.mechanism, '') +
+      `</div>`
+    );
+    beaconDone = true;
+    enableBtn('btn-atk-beacon');
+  } else {
+    addLogEntry('error', `<div class="log-main red">✗ ${d.message}</div>`);
+  }
+  updateStats(d.summary);
+}
+
+/* ── Metric ── */
+async function sendMetric() {
+  addSectionHeader('Phase 4 — AES-256-GCM Metric', '📊');
+  const d = await post('/api/metric');
+
+  if (d.ok) {
+    const s = d.sent;
+    addLogEntry('success',
+      `<div class="log-main green">✓ Metric encrypted, transmitted, and decrypted</div>` +
+      `<div class="log-row">` +
+        kv('hop_count', s.hop_count, '') +
+        kv('delay_ms', s.delay_ms, '') +
+        kv('path_cost', s.path_cost, '') +
+        kv('Ciphertext', s.ciphertext, 'purple') +
+        kv('Chain hash', s.chain_hash, 'green') +
+        kv('AAD', s.aad, '') +
+        kv('Mechanism', s.mechanism, '') +
+      `</div>`
+    );
+    metricDone = true;
+    enableBtn('btn-atk-metric');
+  } else {
+    addLogEntry('error', `<div class="log-main red">✗ ${d.message}</div>`);
+  }
+  updateStats(d.summary);
+}
+
+/* ── Attack: LAF-DP ── */
+async function attackBeacon() {
+  addSectionHeader('Phase 5 — Attack: LAF-DP (Tampered Beacon)', '⚠');
+  const d = await post('/api/attack/beacon');
+
+  addLogEntry('attack',
+    `<div class="log-main orange">⚠ ${d.attack}</div>` +
+    step('►', 'info', d.action) +
+    step('►', 'info', d.explanation) +
+    step('✗', 'fail', d.result)
+  );
+  addLogEntry('error',
+    `<div class="log-main red">✗ Attack BLOCKED — falsified beacon rejected before routing</div>`
+  );
+  updateStats(d.summary);
+}
+
+/* ── Attack: MS-DP ── */
+async function attackMetric() {
+  addSectionHeader('Phase 6 — Attack: MS-DP (Replayed Metric)', '⚠');
+  const d = await post('/api/attack/metric');
+
+  addLogEntry('attack',
+    `<div class="log-main orange">⚠ ${d.attack}</div>` +
+    step('►', 'info', d.action) +
+    step('►', 'info', d.explanation) +
+    step('✗', 'fail', d.result)
+  );
+  addLogEntry('error',
+    `<div class="log-main red">✗ Attack BLOCKED — replayed metric rejected by hash chain</div>`
+  );
+  updateStats(d.summary);
+}
+
+/* ── Attack: MITM ── */
+async function attackMitm() {
+  addSectionHeader('Attack — MITM on Handshake Round 2', '⚠');
+  const d = await post('/api/attack/mitm');
+
+  addLogEntry('attack',
+    `<div class="log-main orange">⚠ ${d.attack}</div>` +
+    step('►', 'info', d.action) +
+    step('►', 'info', d.explanation) +
+    step('✗', 'fail', d.result)
+  );
+  if (d.blocked) {
+    addLogEntry('error',
+      `<div class="log-main red">✗ Attack BLOCKED — MAC_K1(ct2) verification failed, handshake aborted</div>`
+    );
+  }
+}
+
+/* ── Attack: DoS Flood ── */
+async function attackFlood() {
+  addSectionHeader('Attack — DoS Beacon Flood (Availability)', '⚠');
+  const d = await post('/api/attack/flood');
+
+  if (!d.ok && d.message) {
+    addLogEntry('error', `<div class="log-main red">✗ ${d.message}</div>`);
+    return;
+  }
+
+  const rows = (d.results || []).map(r => {
+    const blocked = r.status === 'BLOCKED';
+    return `<div class="log-step">` +
+      `<span class="icon ${blocked ? 'fail' : 'ok'}">${blocked ? '✗' : '✓'}</span>` +
+      `<span>Beacon ${r.seq}: ` +
+      `<span style="color:${blocked ? '#f87171' : '#34d399'}">${r.status}</span>` +
+      `${r.reason ? ' — ' + r.reason : ''}</span></div>`;
+  }).join('');
+
+  addLogEntry('attack',
+    `<div class="log-main orange">⚠ ${d.attack}</div>` +
+    step('►', 'info', d.action) +
+    step('►', 'info', d.explanation)
+  );
+  addLogEntry('info', rows);
+  addLogEntry('error',
+    `<div class="log-main red">✗ ${d.flood_blocked} beacon(s) BLOCKED by rate limiter — Availability protected</div>`
+  );
+
+  document.getElementById('stat-flood').textContent = d.flood_blocked;
+  updateStats(d.summary);
+}
+
+/* ── Reset ── */
+async function doReset() {
+  await post('/api/reset');
+  log.innerHTML = '<div class="empty-log" id="empty-msg">Click "Start Handshake" to begin the demonstration</div>';
+  handshakeDone = beaconDone = metricDone = false;
+
+  ['btn-beacon','btn-metric','btn-atk-beacon','btn-atk-metric','btn-atk-mitm','btn-atk-flood'].forEach(disableBtn);
+  enableBtn('btn-handshake');
+
+  ['key-sess','key-enc','key-mac'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('pqc-badge').textContent = '⬤ Not established';
+  document.getElementById('pqc-badge').style.color = '';
+  ['prop-conf','prop-intg','prop-auth','prop-nrep','prop-pqc','prop-fwdsec','prop-avail','ks-pk','ks-ct']
+    .forEach(id => { document.getElementById(id).textContent='—'; document.getElementById(id).style.color=''; });
+  ['stat-ba','stat-br','stat-ma','stat-mr','stat-flood'].forEach(id => document.getElementById(id).textContent='0');
+  setStatus(false, 'Not connected');
+}
+
+function clearLog() {
+  log.innerHTML = '';
+}
+</script>
+</body>
+</html>
